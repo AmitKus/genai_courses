@@ -6,9 +6,9 @@ import os
 
 # Constants and Configuration
 load_dotenv()
-API_KEY = os.getenv("SAMBANOVA_API_KEY")
-BASE_URL = "https://fast-api.snova.ai/v1"
-MODEL = "llama3-70b"
+API_KEY = os.getenv("GROQ_API_KEY")
+BASE_URL = "https://api.groq.com/openai/v1/"
+MODEL = "llama-3.1-70b-versatile"
 
 # OpenAI client setup
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
@@ -88,14 +88,13 @@ def main():
 
     # Get initial response
     message = get_streaming_response(messages)
-    messages.append({"role": "assistant", "content": message})
     parsed_response = parse_tool_response(message)
 
     if parsed_response:
         available_functions = {"get_current_weather": get_current_weather}
         function_to_call = available_functions[parsed_response["function"]]
         weather = function_to_call(parsed_response["arguments"]["location"])
-        messages.append({"role": "ipython", "content": weather})
+        messages.append({"role": "tool", "content": weather})
         print("Weather answer:", weather)
 
         # Get final response
