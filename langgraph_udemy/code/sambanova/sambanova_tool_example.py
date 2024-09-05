@@ -10,7 +10,7 @@ API_KEY = os.getenv("SAMBANOVA_API_KEY")
 BASE_URL = "https://fast-api.snova.ai/v1"
 MODEL = "llama3-70b"
 
-# OpenAI client setup
+# Client setup
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
 
 # Weather tool definition
