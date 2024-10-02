@@ -2,18 +2,18 @@ import os
 import asyncio
 from typing import Tuple, Union
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from openai import AsyncOpenAI
 import time
 
-load_dotenv()
+load_dotenv("../.env")
 
 async def test_vendor_model(base_url: str, api_key: str, model_name: str, streaming: bool = True) -> Union[Tuple[str, dict], str]:
     """
     Test the chat model by streaming or non-streaming a prompt and returning the result.
 
     Args:
-        base_url (str): The base URL of the LangChain server
-        api_key (str): The API key for the LangChain server
+        base_url (str): The base URL of the OpenAI-compatible API
+        api_key (str): The API key for the service
         model_name (str): The name of the model to use
         streaming (bool): Whether to use streaming mode or not
 
@@ -21,21 +21,33 @@ async def test_vendor_model(base_url: str, api_key: str, model_name: str, stream
         Union[Tuple[str, dict], str]: The final message and the last chunk metadata if streaming,
                                       or just the final message if not streaming
     """
-    llm = ChatOpenAI(base_url=base_url, api_key=api_key, streaming=streaming, model=model_name, max_tokens=4000)
+    client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+    
+    messages = [{"role": "user", "content": "What is the meaning of life?"}]
     
     if streaming:
         final_message = ""
         last_chunk = None
-        async for chunk in llm.astream("What is the meaning of life?"):
-            if chunk.response_metadata:
-                last_chunk = chunk
-            final_message += chunk.content
+        stream = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            stream=True,
+            max_tokens=4000
+        )
+        async for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                final_message += chunk.choices[0].delta.content
+            last_chunk = chunk
 
-        print(last_chunk)
+        # print(last_chunk)
         return final_message, last_chunk
     else:
-        final_message = await llm.ainvoke("What is the meaning of life?")
-        return final_message.content
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            max_tokens=4000
+        )
+        return response.choices[0].message.content
 
 def get_credentials(vendor_name: str) -> Tuple[str, str]:
     """
@@ -100,4 +112,4 @@ def test_vendor(vendor_name: str, streaming: bool = True) -> None:
 # Test all vendors with both streaming and non-streaming modes
 for vendor in ["sambanova", "groq", "cerebras", "openai"]:
     test_vendor(vendor, streaming=True)
-    test_vendor(vendor, streaming=False)
+    # test_vendor(vendor, streaming=False)
